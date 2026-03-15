@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2Pファイル共有</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; line-height: 1.6; }
+        .box { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 8px; }
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; background: #eee; font-size: 0.9em; }
+        .connected { background: #d4edda; color: #155724; }
+        input[type="text"] { padding: 5px; width: 60%; }
+        button { padding: 5px 15px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>P2Pファイル共有</h1>
+    <p>※サーバーを経由せず、端末同士で直接ファイルを送受信します。</p>
+
+    <div class="box">
+        <h3>1. あなたの接続ID</h3>
+        <p>このIDを相手に入力してもらいます（または相手のIDを下に入力します）。</p>
+        <h2 id="my-id" style="color: #0056b3;">取得中...</h2>
+    </div>
+
+    <div class="box">
+        <h3>2. 相手と繋ぐ</h3>
+        <input type="text" id="peer-id-input" placeholder="相手のIDを入力">
+        <button onclick="connectToPeer()">接続する</button>
+        <p>状態: <span id="status" class="status-badge">未接続</span></p>
+    </div>
+
+    <div class="box">
+        <h3>3. ファイルを送る</h3>
+        <input type="file" id="file-input">
+        <button onclick="sendFile()">送信</button>
+    </div>
+
+    <script>
+        // PeerJSの初期化（無料の公開シグナリングサーバーを使用）
+        const peer = new Peer();
+        let conn;
+
+        // 自分のIDが発行されたら画面に表示
+        peer.on('open', (id) => {
+            document.getElementById('my-id').innerText = id;
+        });
+
+        // 【受信側】相手から接続されたときの処理
+        peer.on('connection', (connection) => {
+            conn = connection;
+            setupConnection();
+        });
+
+        // 【送信側】相手のIDを入力して接続ボタンを押したときの処理
+        function connectToPeer() {
+            const peerId = document.getElementById('peer-id-input').value;
+            if (!peerId) return alert('相手のIDを入力してください');
+            conn = peer.connect(peerId);
+            setupConnection();
+        }
+
+        // 接続が確立したあとの共通処理（データ受信など）
+        function setupConnection() {
+            conn.on('open', () => {
+                const statusEl = document.getElementById('status');
+                statusEl.innerText = '接続完了！';
+                statusEl.classList.add('connected');
+            });
+
+            // ファイル（データ）を受け取ったときの処理
+            conn.on('data', (data) => {
+                if (data.file) {
+                    // 受け取ったデータをファイルとしてダウンロードさせる
+                    const blob = new Blob([data.file], { type: data.filetype });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.filename;
+                    a.click();
+                    URL.revokeObjectURL(url); // メモリ解放
+                    alert(`「${data.filename}」を受信しました！`);
+                }
+            });
+        }
+
+        // ファイルを送信する処理
+        function sendFile() {
+            if (!conn || !conn.open) {
+                return alert('先に相手と接続してください');
+            }
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            if (!file) {
+                return alert('ファイルを選択してください');
+            }
+            
+            // ファイルデータを相手に直接送る
+            conn.send({
+                file: file,
+                filename: file.name,
+                filetype: file.type
+            });
+            alert('送信完了しました！');
+            fileInput.value = ''; // 選択をクリア
+        }
+    </script>
+</body>
+</html>
