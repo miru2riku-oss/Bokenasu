@@ -3,107 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2Pファイル共有</title>
+    <title>安全なP2Pファイル共有</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; line-height: 1.6; }
-        .box { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 8px; }
-        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; background: #eee; font-size: 0.9em; }
+        body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; line-height: 1.6; background-color: #f9f9f9; }
+        .box { background: white; border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; background: #eee; font-size: 0.9em; font-weight: bold; }
         .connected { background: #d4edda; color: #155724; }
-        input[type="text"] { padding: 5px; width: 60%; }
-        button { padding: 5px 15px; cursor: pointer; }
+        input[type="text"], input[type="number"] { padding: 8px; width: 60%; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 8px 15px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        h3 { margin-top: 0; color: #333; }
+        .pin-display { font-size: 2.5em; color: #0056b3; margin: 10px 0; letter-spacing: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>P2Pファイル共有</h1>
-    <p>※サーバーを経由せず、端末同士で直接ファイルを送受信します。</p>
+    <h1>安全なファイル共有</h1>
 
     <div class="box">
-        <h3>1. あなたの接続ID</h3>
-        <p>このIDを相手に入力してもらいます（または相手のIDを下に入力します）。</p>
-        <h2 id="my-id" style="color: #0056b3;">取得中...</h2>
+        <h3>1. あなたの情報</h3>
+        <p>あなたの表示名: <input type="text" id="my-name" value="私のスマホ"></p>
+        <p>接続用PINコード:</p>
+        <div id="my-pin" class="pin-display">----</div>
     </div>
 
     <div class="box">
         <h3>2. 相手と繋ぐ</h3>
-        <input type="text" id="peer-id-input" placeholder="相手のIDを入力">
-        <button onclick="connectToPeer()">接続する</button>
-        <p>状態: <span id="status" class="status-badge">未接続</span></p>
+        <p>相手の画面に表示されている5桁のPINを入力してください。</p>
+        <input type="number" id="target-pin" placeholder="例: 12345">
+        <button onclick="requestConnection()">接続要求</button>
+        <p style="margin-top: 15px;">現在の状態: <span id="status" class="status-badge">未接続</span></p>
     </div>
 
     <div class="box">
         <h3>3. ファイルを送る</h3>
-        <input type="file" id="file-input">
-        <button onclick="sendFile()">送信</button>
+        <input type="file" id="file-input" disabled>
+        <button onclick="sendFile()" id="send-btn" disabled>送信</button>
     </div>
 
     <script>
-        // PeerJSの初期化（無料の公開シグナリングサーバーを使用）
-        const peer = new Peer();
-        let conn;
+        // 5桁のランダムなPINコードを生成
+        const myPin = Math.floor(10000 + Math.random() * 90000).toString();
+        // PeerJSのIDが世界中で被らないように接頭辞をつける
+        const myPeerId = 'easy-share-app-' + myPin;
+        const peer = new Peer(myPeerId);
+        let currentConn = null;
 
-        // 自分のIDが発行されたら画面に表示
-        peer.on('open', (id) => {
-            document.getElementById('my-id').innerText = id;
+        // 画面起動時の処理
+        peer.on('open', () => {
+            document.getElementById('my-pin').innerText = myPin;
         });
 
-        // 【受信側】相手から接続されたときの処理
-        peer.on('connection', (connection) => {
-            conn = connection;
-            setupConnection();
+        // ==========================================
+        // 【受信側】相手から接続「要求」が来たときの処理
+        // ==========================================
+        peer.on('connection', (conn) => {
+            // 相手の名前を取得
+            const callerName = conn.metadata ? conn.metadata.name : '名無し端末';
+            
+            // セキュリティ：本当に接続するか確認ダイアログを表示
+            const accept = window.confirm(`【接続リクエスト】\n「${callerName}」さんから接続要求があります。\n許可しますか？`);
+            
+            if (accept) {
+                // 許可した場合
+                currentConn = conn;
+                setupDataListener(conn);
+                updateStatus(`${callerName} と接続中`, true);
+                
+                // 相手に「許可したよ」というメッセージと自分の名前を送る
+                conn.on('open', () => {
+                    const myName = document.getElementById('my-name').value;
+                    conn.send({ type: 'system', message: 'accepted', name: myName });
+                });
+            } else {
+                // 拒否した場合
+                conn.on('open', () => {
+                    conn.send({ type: 'system', message: 'rejected' });
+                    setTimeout(() => conn.close(), 500); // 少し待ってから切断
+                });
+            }
         });
 
-        // 【送信側】相手のIDを入力して接続ボタンを押したときの処理
-        function connectToPeer() {
-            const peerId = document.getElementById('peer-id-input').value;
-            if (!peerId) return alert('相手のIDを入力してください');
-            conn = peer.connect(peerId);
-            setupConnection();
+        // ==========================================
+        // 【送信側】相手のPINを入力して接続要求を送る処理
+        // ==========================================
+        function requestConnection() {
+            const targetPin = document.getElementById('target-pin').value;
+            if (targetPin.length !== 5) return alert('5桁のPINコードを入力してください。');
+            
+            const targetId = 'easy-share-app-' + targetPin;
+            const myName = document.getElementById('my-name').value;
+            
+            updateStatus('相手の承認を待機中...', false);
+            
+            // 自分の名前(metadata)を添えて接続要求を出す
+            const conn = peer.connect(targetId, { metadata: { name: myName } });
+            
+            // 相手からの返答（許可/拒否）を待つ
+            conn.on('data', (data) => {
+                if (data.type === 'system') {
+                    if (data.message === 'accepted') {
+                        alert(`「${data.name}」さんが接続を許可しました！`);
+                        currentConn = conn;
+                        setupDataListener(conn);
+                        updateStatus(`${data.name} と接続中`, true);
+                    } else if (data.message === 'rejected') {
+                        alert('接続が拒否されました。');
+                        updateStatus('未接続', false);
+                        conn.close();
+                    }
+                }
+            });
         }
 
-        // 接続が確立したあとの共通処理（データ受信など）
-        function setupConnection() {
-            conn.on('open', () => {
-                const statusEl = document.getElementById('status');
-                statusEl.innerText = '接続完了！';
-                statusEl.classList.add('connected');
-            });
-
-            // ファイル（データ）を受け取ったときの処理
+        // ==========================================
+        // ファイルの送受信処理
+        // ==========================================
+        function setupDataListener(conn) {
             conn.on('data', (data) => {
-                if (data.file) {
-                    // 受け取ったデータをファイルとしてダウンロードさせる
+                // ファイルを受け取ったときの処理
+                if (data.type === 'file') {
+                    // 自動でダウンロードさせる
                     const blob = new Blob([data.file], { type: data.filetype });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
                     a.download = data.filename;
                     a.click();
-                    URL.revokeObjectURL(url); // メモリ解放
+                    URL.revokeObjectURL(url);
                     alert(`「${data.filename}」を受信しました！`);
                 }
             });
+            
+            // 接続が切れたときの処理
+            conn.on('close', () => {
+                alert('通信が切断されました。');
+                updateStatus('未接続', false);
+                currentConn = null;
+            });
         }
 
-        // ファイルを送信する処理
         function sendFile() {
-            if (!conn || !conn.open) {
-                return alert('先に相手と接続してください');
+            if (!currentConn || !currentConn.open) {
+                return alert('接続されていません。');
             }
             const fileInput = document.getElementById('file-input');
             const file = fileInput.files[0];
-            if (!file) {
-                return alert('ファイルを選択してください');
-            }
+            if (!file) return alert('ファイルを選択してください');
             
-            // ファイルデータを相手に直接送る
-            conn.send({
+            // ファイルデータを相手に送信
+            currentConn.send({
+                type: 'file',
                 file: file,
                 filename: file.name,
                 filetype: file.type
             });
             alert('送信完了しました！');
-            fileInput.value = ''; // 選択をクリア
+            fileInput.value = '';
+        }
+
+        // 画面の表示を切り替える便利関数
+        function updateStatus(text, isConnected) {
+            const statusEl = document.getElementById('status');
+            statusEl.innerText = text;
+            if (isConnected) {
+                statusEl.classList.add('connected');
+                document.getElementById('file-input').disabled = false;
+                document.getElementById('send-btn').disabled = false;
+            } else {
+                statusEl.classList.remove('connected');
+                document.getElementById('file-input').disabled = true;
+                document.getElementById('send-btn').disabled = true;
+            }
         }
     </script>
 </body>
