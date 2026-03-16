@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ボケナス / Bokenasu - P2P File Share</title>
+    <title>Bokenasu - P2P File Share & Chat</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
@@ -27,51 +27,50 @@
             border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden;
         }
         
-        /* タブメニュー */
         .tabs { display: flex; background: #E5E7EB; }
-        .tab {
-            flex: 1; padding: 15px; text-align: center; font-weight: bold; cursor: pointer;
-            color: var(--text-muted); transition: 0.3s;
-        }
+        .tab { flex: 1; padding: 15px; text-align: center; font-weight: bold; cursor: pointer; color: var(--text-muted); transition: 0.3s; }
         .tab.active { background: var(--card-bg); color: var(--primary); border-top: 3px solid var(--primary); }
         .content { padding: 25px; display: none; }
         .content.active { display: block; }
         
         h3 { margin-top: 0; font-size: 1.2rem; border-bottom: 2px solid #F3F4F6; padding-bottom: 10px; }
         
-        /* フォーム部品 */
         input[type="text"], input[type="password"], input[type="number"] {
-            width: 100%; padding: 12px; margin: 8px 0 16px;
-            border: 1px solid #D1D5DB; border-radius: 8px; box-sizing: border-box; font-size: 1rem;
+            width: 100%; padding: 12px; margin: 8px 0 16px; border: 1px solid #D1D5DB; border-radius: 8px; box-sizing: border-box; font-size: 1rem;
         }
         button {
-            width: 100%; padding: 12px; background: var(--primary); color: white;
-            border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
+            width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
         }
         button:hover { background: var(--primary-hover); }
         button:disabled { background: #9CA3AF; cursor: not-allowed; }
         button.danger { background: var(--danger); margin-top: 10px; }
         button.danger:hover { background: #DC2626; }
+        button.success { background: var(--success); }
         button.small { width: auto; padding: 6px 12px; font-size: 0.85rem; background: var(--text-muted); }
         
-        /* UIパーツ */
         .pin-box { text-align: center; font-size: 3rem; font-weight: bold; color: var(--primary); letter-spacing: 8px; margin: 10px 0; }
         .status-bar { padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold; background: #F3F4F6; }
         .status-bar.connected { background: #D1FAE5; color: #065F46; }
         .status-bar.waiting { background: #FEF3C7; color: #92400E; }
         .status-bar.disconnected { background: #FEE2E2; color: #991B1B; }
         
-        .member-list { list-style: none; padding: 0; margin: 0 0 20px 0; }
-        .member-list li {
-            padding: 12px; border: 1px solid #E5E7EB; margin-bottom: 8px; border-radius: 8px;
-            display: flex; justify-content: space-between; align-items: center; background: #F9FAFB;
-        }
+        .list-group { list-style: none; padding: 0; margin: 0 0 20px 0; }
+        .list-group li { padding: 12px; border: 1px solid #E5E7EB; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; background: #F9FAFB; }
+        
+        /* チャットエリア */
+        .chat-box { height: 200px; overflow-y: auto; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #F9FAFB; display: flex; flex-direction: column; gap: 8px; }
+        .chat-msg { background: white; padding: 8px 12px; border-radius: 12px; border: 1px solid #E5E7EB; max-width: 80%; align-self: flex-start; word-break: break-all; }
+        .chat-msg.self { background: #E0E7FF; border-color: #C7D2FE; align-self: flex-end; }
+        .chat-msg span { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 2px; }
+        .chat-input-area { display: flex; gap: 10px; }
+        .chat-input-area input { margin: 0; flex: 1; }
+        .chat-input-area button { width: auto; padding: 0 20px; }
 
-        /* カスタムモーダル（処理を止めない） */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000;
-        }
+        /* フレンドマーク */
+        .online-dot { width: 12px; height: 12px; border-radius: 50%; background-color: #D1D5DB; display: inline-block; margin-right: 8px; }
+        .online-dot.active { background-color: var(--success); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; }
         .hidden { display: none !important; }
     </style>
@@ -80,9 +79,9 @@
 
     <div id="name-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <h2 style="color: var(--primary);">ボケナスへようこそ！</h2>
+            <h2 style="color: var(--primary);">Bokenasu</h2>
             <p>相手に表示されるデバイス名を入力してください。</p>
-            <input type="text" id="setup-name" placeholder="例: 私のスマホ" maxlength="15">
+            <input type="text" id="setup-name" placeholder="例: 私のPC" maxlength="15">
             <button onclick="saveNameAndInit()">保存してはじめる</button>
         </div>
     </div>
@@ -92,14 +91,14 @@
             <h2 id="confirm-title" style="color: var(--primary); margin-top:0;">接続要求</h2>
             <p id="confirm-desc">ファイル共有を許可しますか？</p>
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button onclick="acceptConnection()" style="background: var(--success);">許可する</button>
-                <button onclick="rejectConnection()" style="background: var(--danger);">拒否</button>
+                <button onclick="acceptConnection()" class="success">許可する</button>
+                <button onclick="rejectConnection()" class="danger">拒否</button>
             </div>
         </div>
     </div>
 
     <div class="header">
-        <h1>🍆 Bokenasu</h1>
+        <h1>Bokenasu</h1>
         <p>かんたん・安全なファイル共有</p>
         <div class="name-display">
             <span id="display-my-name" style="font-weight:bold; color:var(--primary);">名前未設定</span>
@@ -110,16 +109,30 @@
     <div class="container">
         <div id="connection-panel" class="hidden" style="padding: 20px; border-bottom: 2px solid #E5E7EB;">
             <div id="status-bar" class="status-bar">未接続</div>
-            <div id="file-transfer-area" class="hidden">
-                <input type="file" id="file-input" style="margin-bottom: 10px;">
-                <button onclick="sendFile()">📤 ファイルを送信</button>
-                <button onclick="disconnect()" class="danger">🔌 切断する</button>
+            
+            <div id="action-area" class="hidden">
+                <button id="add-friend-btn" onclick="sendFriendRequest()" class="small" style="margin-bottom: 15px;">フレンド追加</button>
+
+                <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h3 style="font-size: 1rem; border:none; padding:0; margin-bottom:10px;">ファイル送信 (双方向)</h3>
+                    <input type="file" id="file-input" style="margin-bottom: 10px; width:100%;">
+                    <button onclick="sendFile()">送信する</button>
+                </div>
+
+                <div class="chat-box" id="p2p-chat-box"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="p2p-chat-input" placeholder="メッセージを入力...">
+                    <button onclick="sendP2PChat()">送信</button>
+                </div>
+
+                <button onclick="disconnect()" class="danger" style="margin-top: 20px;">切断する</button>
             </div>
         </div>
 
         <div class="tabs" id="tabs-menu">
             <div class="tab active" onclick="switchTab('pin')">1対1 (PIN)</div>
-            <div class="tab" onclick="switchTab('room')">ルーム (合言葉)</div>
+            <div class="tab" onclick="switchTab('room')">ルーム</div>
+            <div class="tab" onclick="switchTab('friends')">フレンド</div>
         </div>
 
         <div id="tab-pin" class="content active">
@@ -135,17 +148,32 @@
                 <h3>ルームを作成・参加</h3>
                 <input type="text" id="room-password" placeholder="合言葉 (例: bokenasu123)">
                 <div style="display: flex; gap: 10px;">
-                    <button onclick="createRoom()" style="background: var(--success);">作成</button>
+                    <button onclick="createRoom()" class="success">作成</button>
                     <button onclick="joinRoom()">参加</button>
                 </div>
             </div>
 
             <div id="room-active" class="hidden">
                 <h3 id="room-title">ルーム: ----</h3>
-                <p>オンラインのメンバー</p>
-                <ul class="member-list" id="room-members"></ul>
-                <button onclick="leaveRoom()" class="danger">ルームを退出・削除</button>
+                <p>メンバー一覧 (タップで個別接続)</p>
+                <ul class="list-group" id="room-members"></ul>
+                
+                <h3 style="margin-top: 20px; border:none;">ルームチャット</h3>
+                <div class="chat-box" id="room-chat-box"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="room-chat-input" placeholder="全体メッセージ...">
+                    <button onclick="sendRoomChat()">送信</button>
+                </div>
+
+                <button onclick="leaveRoom()" class="danger" style="margin-top: 20px;">ルームを退出・削除</button>
             </div>
+        </div>
+
+        <div id="tab-friends" class="content">
+            <h3>フレンド一覧</h3>
+            <p style="font-size:0.9rem; color:var(--text-muted);">※このタブを開くとオンライン状態を確認します。</p>
+            <ul class="list-group" id="friends-list">
+                </ul>
         </div>
     </div>
 
@@ -156,20 +184,18 @@
         let peer = null;          
         let currentConn = null;   
         let reconnectTimer = null;
-        let incomingConn = null;  // 承認待ちの接続を一時保存する変数
+        let incomingConn = null;  
         
         let roomHostPeer = null;  
         let roomMembers = [];     
         let roomConnection = null;
 
+        let friends = JSON.parse(localStorage.getItem('bokenasu_friends') || '[]');
+
         window.onload = () => {
             myName = localStorage.getItem('bokenasu_name');
-            if (!myName) {
-                openNameModal();
-            } else {
-                document.getElementById('display-my-name').innerText = myName;
-                initPeer();
-            }
+            if (!myName) openNameModal();
+            else { document.getElementById('display-my-name').innerText = myName; initPeer(); }
         };
 
         function openNameModal() {
@@ -179,12 +205,12 @@
 
         function saveNameAndInit() {
             const nameInput = document.getElementById('setup-name').value.trim();
-            if (!nameInput) return alert('名前を入力してください！');
+            if (!nameInput) return alert('名前を入力してください。');
             localStorage.setItem('bokenasu_name', nameInput);
             myName = nameInput;
             document.getElementById('display-my-name').innerText = myName;
             document.getElementById('name-modal').classList.add('hidden');
-            if (!peer) initPeer(); // 初回のみPeerを起動
+            if (!peer) initPeer(); 
         }
 
         function initPeer() {
@@ -192,6 +218,12 @@
             peer = new Peer(myPeerId);
 
             peer.on('connection', (conn) => {
+                // Ping（オンライン確認）通信の場合はすぐ閉じる
+                if (conn.metadata && conn.metadata.type === 'ping') {
+                    conn.on('open', () => conn.close());
+                    return;
+                }
+
                 const callerName = conn.metadata ? conn.metadata.name : '名無し';
                 
                 if (currentConn && currentConn.open && currentConn.peer !== conn.peer) {
@@ -200,34 +232,26 @@
                     return;
                 }
 
-                // ブラウザの処理を止めない自作モーダルを表示
                 incomingConn = conn;
                 document.getElementById('confirm-title').innerText = `${callerName} さん`;
                 document.getElementById('confirm-modal').classList.remove('hidden');
             });
         }
 
-        // --- 自作モーダルの「許可」「拒否」ボタンの処理 ---
         function acceptConnection() {
             document.getElementById('confirm-modal').classList.add('hidden');
             if (!incomingConn) return;
-            
             const callerName = incomingConn.metadata ? incomingConn.metadata.name : '名無し';
             setupFileConnection(incomingConn, callerName);
-            
             const sendAccept = () => incomingConn.send({ type: 'sys', msg: 'accepted', name: myName });
-            // 接続が開いていればすぐ送信、開いていなければ開くのを待って送信（これがバグ解消の肝）
-            if (incomingConn.open) sendAccept();
-            else incomingConn.on('open', sendAccept);
+            if (incomingConn.open) sendAccept(); else incomingConn.on('open', sendAccept);
         }
 
         function rejectConnection() {
             document.getElementById('confirm-modal').classList.add('hidden');
             if (!incomingConn) return;
-            
             const sendReject = () => { incomingConn.send({ type: 'sys', msg: 'rejected' }); setTimeout(()=>incomingConn.close(), 500); };
-            if (incomingConn.open) sendReject();
-            else incomingConn.on('open', sendReject);
+            if (incomingConn.open) sendReject(); else incomingConn.on('open', sendReject);
             incomingConn = null;
         }
 
@@ -243,20 +267,17 @@
             updateStatus('相手の承認を待機中...', 'waiting');
             showPanel(true);
 
-            // reliable: true を追加してデータ転送速度・安定性を向上
             const conn = peer.connect(targetPeerId, { metadata: { name: myName }, reliable: true });
             
             conn.on('data', (data) => {
                 if (data.type === 'sys') {
                     if (data.msg === 'accepted') {
                         setupFileConnection(conn, data.name);
-                        alert(`「${data.name}」さんと接続しました！`);
+                        alert(`「${data.name}」さんと接続しました。`);
                     } else if (data.msg === 'rejected') {
-                        alert('接続が拒否されました。');
-                        disconnect();
+                        alert('接続が拒否されました。'); disconnect();
                     } else if (data.msg === 'busy') {
-                        alert('相手は別のユーザーと通信中です。');
-                        disconnect();
+                        alert('相手は別のユーザーと通信中です。'); disconnect();
                     }
                 }
             });
@@ -266,24 +287,34 @@
         function setupFileConnection(conn, peerName) {
             currentConn = conn;
             clearTimeout(reconnectTimer); reconnectTimer = null;
+            document.getElementById('p2p-chat-box').innerHTML = ''; // チャット履歴リセット
             
-            updateStatus(`🟢 ${peerName} と接続中`, 'connected');
-            document.getElementById('file-transfer-area').classList.remove('hidden');
+            updateStatus(`${peerName} と接続中`, 'connected');
+            document.getElementById('action-area').classList.remove('hidden');
             document.getElementById('tabs-menu').classList.add('hidden');
-            document.getElementById('tab-pin').classList.remove('active');
-            document.getElementById('tab-room').classList.remove('active');
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+
+            // フレンドボタンの表示制御
+            const isFriend = friends.some(f => f.id === conn.peer);
+            document.getElementById('add-friend-btn').style.display = isFriend ? 'none' : 'block';
 
             conn.on('data', (data) => {
                 if (data.type === 'file') downloadFile(data.file, data.filename, data.filetype);
+                if (data.type === 'chat') appendChatMsg('p2p-chat-box', peerName, data.text, false);
+                if (data.type === 'sys' && data.msg === 'friend_req') handleFriendRequest(data.id, data.name);
+                if (data.type === 'sys' && data.msg === 'friend_acc') {
+                    alert(`${data.name} さんがフレンド申請を承認しました！`);
+                    addFriendLocal(data.id, data.name);
+                    document.getElementById('add-friend-btn').style.display = 'none';
+                }
             });
 
             conn.on('close', () => {
                 if (reconnectTimer) return; 
-                updateStatus(`⚠️ 相手の接続を待っています...`, 'waiting');
-                document.getElementById('file-transfer-area').classList.add('hidden');
-                
+                updateStatus(`相手の接続を待機しています...`, 'waiting');
+                document.getElementById('action-area').classList.add('hidden');
                 reconnectTimer = setTimeout(() => {
-                    updateStatus(`❌ 切断されました`, 'disconnected');
+                    updateStatus(`切断されました`, 'disconnected');
                     currentConn = null; reconnectTimer = null;
                     setTimeout(() => disconnect(), 2000);
                 }, 10000);
@@ -295,9 +326,8 @@
             const file = fileInput.files[0];
             if (!file) return alert('ファイルを選択してください');
             if (!currentConn || !currentConn.open) return alert('接続されていません。');
-
             currentConn.send({ type: 'file', file: file, filename: file.name, filetype: file.type });
-            alert('送信しました！');
+            alert('送信しました。');
             fileInput.value = '';
         }
 
@@ -307,60 +337,140 @@
             const a = document.createElement('a');
             a.href = url; a.download = filename; a.click();
             URL.revokeObjectURL(url);
-            alert(`「${filename}」を受信しました！`);
+            alert(`「${filename}」を受信しました。`);
         }
 
         function disconnect() {
             if (currentConn) { currentConn.close(); currentConn = null; }
             clearTimeout(reconnectTimer); reconnectTimer = null;
-            
             updateStatus('未接続', '');
             showPanel(false);
-            document.getElementById('file-transfer-area').classList.add('hidden');
+            document.getElementById('action-area').classList.add('hidden');
             document.getElementById('tabs-menu').classList.remove('hidden');
-            
-            const activeTabId = document.querySelector('.tab.active').getAttribute('onclick').match(/'([^']+)'/)[1];
-            document.getElementById(`tab-${activeTabId}`).classList.add('active');
+            document.querySelector('.tab.active').click(); // 現在のタブを再表示
         }
 
-        // --- ルーム機能 ---
+        // --- チャットユーティリティ ---
+        function parseLinks(text) {
+            const escaped = text.replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag]));
+            return escaped.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:var(--primary);">$1</a>');
+        }
+
+        function appendChatMsg(boxId, sender, text, isSelf) {
+            const box = document.getElementById(boxId);
+            const div = document.createElement('div');
+            div.className = `chat-msg ${isSelf ? 'self' : ''}`;
+            div.innerHTML = `<span>${sender}</span>${parseLinks(text)}`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function sendP2PChat() {
+            const input = document.getElementById('p2p-chat-input');
+            const text = input.value.trim();
+            if (!text || !currentConn || !currentConn.open) return;
+            currentConn.send({ type: 'chat', text: text });
+            appendChatMsg('p2p-chat-box', myName, text, true);
+            input.value = '';
+        }
+
+        // --- フレンド機能 ---
+        function sendFriendRequest() {
+            if (!currentConn || !currentConn.open) return;
+            currentConn.send({ type: 'sys', msg: 'friend_req', id: myPeerId, name: myName });
+            alert('フレンド申請を送信しました。');
+        }
+
+        function handleFriendRequest(targetId, targetName) {
+            if (confirm(`${targetName} さんからフレンド申請が届きました。承認しますか？`)) {
+                addFriendLocal(targetId, targetName);
+                if (currentConn && currentConn.open) {
+                    currentConn.send({ type: 'sys', msg: 'friend_acc', id: myPeerId, name: myName });
+                    document.getElementById('add-friend-btn').style.display = 'none';
+                }
+            }
+        }
+
+        function addFriendLocal(id, name) {
+            if (!friends.some(f => f.id === id)) {
+                friends.push({ id, name });
+                localStorage.setItem('bokenasu_friends', JSON.stringify(friends));
+                renderFriends();
+            }
+        }
+
+        function renderFriends() {
+            const list = document.getElementById('friends-list');
+            list.innerHTML = '';
+            if (friends.length === 0) list.innerHTML = '<li style="color:#999; justify-content:center;">フレンドはいません</li>';
+            
+            friends.forEach(f => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div><span class="online-dot" id="dot-${f.id}"></span> ${f.name}</div>
+                    <button class="small" onclick="startConnection('${f.id}')">接続</button>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function checkFriendsStatus() {
+            friends.forEach(f => {
+                const dot = document.getElementById(`dot-${f.id}`);
+                if (dot) dot.classList.remove('active'); // 一旦オフ
+                
+                // Ping通信でオンライン確認
+                const testConn = peer.connect(f.id, { metadata: { type: 'ping' } });
+                testConn.on('open', () => {
+                    if (dot) dot.classList.add('active'); // 通信成功でオンライン
+                    testConn.close();
+                });
+            });
+        }
+
+        // --- タブ＆ルーム機能 ---
         function switchTab(tabId) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
             document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
             document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            if (tabId === 'friends') {
+                renderFriends();
+                checkFriendsStatus(); // 開いた時にオンラインチェック
+            }
         }
 
         function createRoom() {
             const pass = document.getElementById('room-password').value.trim();
             if (!pass) return alert('合言葉を入力してください');
             
-            const roomId = 'bokenasu-rm-' + pass;
-            roomHostPeer = new Peer(roomId);
-            
+            roomHostPeer = new Peer('bokenasu-rm-' + pass);
             roomHostPeer.on('open', () => {
                 document.getElementById('room-title').innerText = `ルーム: ${pass} (ホスト)`;
                 document.getElementById('room-setup').classList.add('hidden');
                 document.getElementById('room-active').classList.remove('hidden');
+                document.getElementById('room-chat-box').innerHTML = '';
                 roomMembers = [{ id: myPeerId, name: myName + " (ホスト)" }];
                 updateRoomUI();
             });
-
             roomHostPeer.on('error', (err) => {
-                if (err.type === 'unavailable-id') alert('その合言葉のルームは既に存在します。「参加」してください。');
-                else alert('ルーム作成エラー: ' + err.message);
+                if (err.type === 'unavailable-id') alert('その合言葉のルームは存在します。「参加」してください。');
             });
-
             roomHostPeer.on('connection', (conn) => {
                 conn.on('data', (data) => {
                     if (data.type === 'join') {
                         roomMembers.push({ id: data.userId, name: data.name, conn: conn });
-                        broadcastRoomMembers();
+                        broadcastRoomData({ type: 'member_list', members: roomMembers.map(m=>({id:m.id, name:m.name})) });
+                    }
+                    if (data.type === 'room_chat') {
+                        appendChatMsg('room-chat-box', data.name, data.text, false);
+                        broadcastRoomData(data); // 他メンバーへ転送
                     }
                 });
                 conn.on('close', () => {
                     roomMembers = roomMembers.filter(m => m.conn !== conn);
-                    broadcastRoomMembers();
+                    broadcastRoomData({ type: 'member_list', members: roomMembers.map(m=>({id:m.id, name:m.name})) });
                 });
             });
         }
@@ -369,32 +479,25 @@
             const pass = document.getElementById('room-password').value.trim();
             if (!pass) return alert('合言葉を入力してください');
             
-            const roomId = 'bokenasu-rm-' + pass;
-            roomConnection = peer.connect(roomId);
-            
+            roomConnection = peer.connect('bokenasu-rm-' + pass);
             roomConnection.on('open', () => {
                 roomConnection.send({ type: 'join', userId: myPeerId, name: myName });
                 document.getElementById('room-title').innerText = `ルーム: ${pass}`;
                 document.getElementById('room-setup').classList.add('hidden');
                 document.getElementById('room-active').classList.remove('hidden');
+                document.getElementById('room-chat-box').innerHTML = '';
             });
-
             roomConnection.on('data', (data) => {
-                if (data.type === 'member_list') {
-                    roomMembers = data.members; updateRoomUI();
-                }
+                if (data.type === 'member_list') { roomMembers = data.members; updateRoomUI(); }
+                if (data.type === 'room_chat') appendChatMsg('room-chat-box', data.name, data.text, false);
             });
-
             roomConnection.on('close', () => { alert('ルームが解散されました。'); leaveRoom(); });
             roomConnection.on('error', () => alert('ルームが見つかりません。'));
         }
 
-        function broadcastRoomMembers() {
+        function broadcastRoomData(data) {
             updateRoomUI();
-            const safeList = roomMembers.map(m => ({ id: m.id, name: m.name }));
-            roomMembers.forEach(member => {
-                if (member.conn && member.conn.open) member.conn.send({ type: 'member_list', members: safeList });
-            });
+            roomMembers.forEach(m => { if (m.conn && m.conn.open) m.conn.send(data); });
         }
 
         function updateRoomUI() {
@@ -406,7 +509,20 @@
                 li.innerHTML = `<span>${m.name}</span> <button class="small" onclick="startConnection('${m.id}')">接続</button>`;
                 listEl.appendChild(li);
             });
-            if (listEl.innerHTML === '') listEl.innerHTML = '<li style="color:#999; justify-content:center;">他のメンバーを待っています...</li>';
+            if (listEl.innerHTML === '') listEl.innerHTML = '<li style="color:#999; justify-content:center;">他のメンバーを待機中...</li>';
+        }
+
+        function sendRoomChat() {
+            const input = document.getElementById('room-chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            appendChatMsg('room-chat-box', myName, text, true);
+            
+            const msgData = { type: 'room_chat', name: myName, text: text };
+            if (roomHostPeer) broadcastRoomData(msgData); // 自分がホスト
+            else if (roomConnection && roomConnection.open) roomConnection.send(msgData); // ゲスト
+            
+            input.value = '';
         }
 
         function leaveRoom() {
