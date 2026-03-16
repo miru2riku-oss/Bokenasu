@@ -3,178 +3,447 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>安全なP2Pファイル共有</title>
+    <title>ボケナス / Bokenasu - P2P File Share</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: 0 auto; line-height: 1.6; background-color: #f9f9f9; }
-        .box { background: white; border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; background: #eee; font-size: 0.9em; font-weight: bold; }
-        .connected { background: #d4edda; color: #155724; }
-        input[type="text"], input[type="number"] { padding: 8px; width: 60%; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 8px 15px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        h3 { margin-top: 0; color: #333; }
-        .pin-display { font-size: 2.5em; color: #0056b3; margin: 10px 0; letter-spacing: 5px; font-weight: bold; }
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg-color: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --danger: #EF4444;
+            --success: #10B981;
+            --warning: #F59E0B;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: var(--primary); font-size: 2.5rem; letter-spacing: -1px; }
+        .header p { margin: 5px 0 0; color: var(--text-muted); }
+        
+        .container {
+            width: 100%; max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        
+        /* タブメニュー */
+        .tabs { display: flex; background: #E5E7EB; }
+        .tab {
+            flex: 1; padding: 15px; text-align: center; font-weight: bold; cursor: pointer;
+            color: var(--text-muted); transition: 0.3s;
+        }
+        .tab.active { background: var(--card-bg); color: var(--primary); border-top: 3px solid var(--primary); }
+        
+        /* コンテンツエリア */
+        .content { padding: 25px; display: none; }
+        .content.active { display: block; }
+        
+        h3 { margin-top: 0; font-size: 1.2rem; border-bottom: 2px solid #F3F4F6; padding-bottom: 10px; }
+        
+        /* フォーム部品 */
+        input[type="text"], input[type="password"], input[type="number"] {
+            width: 100%; padding: 12px; margin: 8px 0 16px;
+            border: 1px solid #D1D5DB; border-radius: 8px; box-sizing: border-box; font-size: 1rem;
+        }
+        button {
+            width: 100%; padding: 12px; background: var(--primary); color: white;
+            border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        button:hover { background: var(--primary-hover); }
+        button:disabled { background: #9CA3AF; cursor: not-allowed; }
+        button.danger { background: var(--danger); margin-top: 10px; }
+        button.danger:hover { background: #DC2626; }
+        
+        /* UIパーツ */
+        .pin-box { text-align: center; font-size: 3rem; font-weight: bold; color: var(--primary); letter-spacing: 8px; margin: 10px 0; }
+        .status-bar { padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold; background: #F3F4F6; }
+        .status-bar.connected { background: #D1FAE5; color: #065F46; }
+        .status-bar.waiting { background: #FEF3C7; color: #92400E; }
+        .status-bar.disconnected { background: #FEE2E2; color: #991B1B; }
+        
+        /* ルームメンバーリスト */
+        .member-list { list-style: none; padding: 0; margin: 0 0 20px 0; }
+        .member-list li {
+            padding: 12px; border: 1px solid #E5E7EB; margin-bottom: 8px; border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center; background: #F9FAFB;
+        }
+        .connect-btn { width: auto; padding: 6px 12px; font-size: 0.9rem; }
+
+        /* 初回起動モーダル */
+        #name-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; }
+        
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <h1>安全なファイル共有</h1>
 
-    <div class="box">
-        <h3>1. あなたの情報</h3>
-        <p>あなたの表示名: <input type="text" id="my-name" value="私のスマホ"></p>
-        <p>接続用PINコード:</p>
-        <div id="my-pin" class="pin-display">----</div>
+    <div id="name-modal" class="hidden">
+        <div class="modal-content">
+            <h2 style="color: var(--primary);">ボケナスへようこそ！</h2>
+            <p>まずは、相手に表示される<br>あなたのデバイス名を決めてください。</p>
+            <input type="text" id="setup-name" placeholder="例: 私のiPhone" maxlength="15">
+            <button onclick="saveNameAndInit()">はじめる</button>
+        </div>
     </div>
 
-    <div class="box">
-        <h3>2. 相手と繋ぐ</h3>
-        <p>相手の画面に表示されている5桁のPINを入力してください。</p>
-        <input type="number" id="target-pin" placeholder="例: 12345">
-        <button onclick="requestConnection()">接続要求</button>
-        <p style="margin-top: 15px;">現在の状態: <span id="status" class="status-badge">未接続</span></p>
+    <div class="header">
+        <h1>🍆 Bokenasu</h1>
+        <p>かんたん・安全なファイル共有</p>
     </div>
 
-    <div class="box">
-        <h3>3. ファイルを送る</h3>
-        <input type="file" id="file-input" disabled>
-        <button onclick="sendFile()" id="send-btn" disabled>送信</button>
+    <div class="container">
+        <div id="connection-panel" class="hidden" style="padding: 20px; border-bottom: 2px solid #E5E7EB;">
+            <div id="status-bar" class="status-bar">未接続</div>
+            <div id="file-transfer-area" class="hidden">
+                <input type="file" id="file-input" style="margin-bottom: 10px;">
+                <button onclick="sendFile()">📤 ファイルを送信</button>
+                <button onclick="disconnect()" class="danger">🔌 切断する</button>
+            </div>
+        </div>
+
+        <div class="tabs" id="tabs-menu">
+            <div class="tab active" onclick="switchTab('pin')">1対1 (PIN)</div>
+            <div class="tab" onclick="switchTab('room')">ルーム (合言葉)</div>
+        </div>
+
+        <div id="tab-pin" class="content active">
+            <h3>あなたのPINコード</h3>
+            <p style="text-align: center; margin: 0;">相手にこの数字を入力してもらいます</p>
+            <div class="pin-box" id="my-pin">----</div>
+            
+            <h3 style="margin-top: 30px;">相手と繋ぐ</h3>
+            <input type="number" id="target-pin" placeholder="相手の5桁のPINを入力">
+            <button onclick="connectByPin()">接続要求を送る</button>
+        </div>
+
+        <div id="tab-room" class="content">
+            <div id="room-setup">
+                <h3>ルームを作成・参加</h3>
+                <p>同じ合言葉を入力した人同士で集まれます。</p>
+                <input type="text" id="room-password" placeholder="合言葉 (例: bokenasu123)">
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="createRoom()" style="background: var(--success);">ルーム作成</button>
+                    <button onclick="joinRoom()">ルームに参加</button>
+                </div>
+            </div>
+
+            <div id="room-active" class="hidden">
+                <h3 id="room-title">ルーム: ----</h3>
+                <p>オンラインのメンバー (タップして接続)</p>
+                <ul class="member-list" id="room-members">
+                    </ul>
+                <button onclick="leaveRoom()" class="danger">ルームを退出・削除</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        // 5桁のランダムなPINコードを生成
-        const myPin = Math.floor(10000 + Math.random() * 90000).toString();
-        // PeerJSのIDが世界中で被らないように接頭辞をつける
-        const myPeerId = 'easy-share-app-' + myPin;
-        const peer = new Peer(myPeerId);
-        let currentConn = null;
+        // --- グローバル変数 ---
+        let myName = "";
+        let myPin = Math.floor(10000 + Math.random() * 90000).toString();
+        let myPeerId = 'bokenasu-usr-' + myPin;
+        let peer = null;          // メインの通信用
+        let currentConn = null;   // 現在ファイル共有中の接続
+        let reconnectTimer = null;// 10秒待機用タイマー
+        
+        // ルーム用変数
+        let roomHostPeer = null;  // 自分がルームを作成した場合のサーバー役Peer
+        let roomMembers = [];     // ルーム内のメンバーリスト
+        let roomConnection = null;// ルームホストとの通信用
 
-        // 画面起動時の処理
-        peer.on('open', () => {
-            document.getElementById('my-pin').innerText = myPin;
-        });
-
-        // ==========================================
-        // 【受信側】相手から接続「要求」が来たときの処理
-        // ==========================================
-        peer.on('connection', (conn) => {
-            // 相手の名前を取得
-            const callerName = conn.metadata ? conn.metadata.name : '名無し端末';
-            
-            // セキュリティ：本当に接続するか確認ダイアログを表示
-            const accept = window.confirm(`【接続リクエスト】\n「${callerName}」さんから接続要求があります。\n許可しますか？`);
-            
-            if (accept) {
-                // 許可した場合
-                currentConn = conn;
-                setupDataListener(conn);
-                updateStatus(`${callerName} と接続中`, true);
-                
-                // 相手に「許可したよ」というメッセージと自分の名前を送る
-                conn.on('open', () => {
-                    const myName = document.getElementById('my-name').value;
-                    conn.send({ type: 'system', message: 'accepted', name: myName });
-                });
+        // --- 初期化処理 ---
+        window.onload = () => {
+            myName = localStorage.getItem('bokenasu_name');
+            if (!myName) {
+                document.getElementById('name-modal').classList.remove('hidden');
             } else {
-                // 拒否した場合
-                conn.on('open', () => {
-                    conn.send({ type: 'system', message: 'rejected' });
-                    setTimeout(() => conn.close(), 500); // 少し待ってから切断
-                });
+                initPeer();
             }
-        });
+        };
 
-        // ==========================================
-        // 【送信側】相手のPINを入力して接続要求を送る処理
-        // ==========================================
-        function requestConnection() {
-            const targetPin = document.getElementById('target-pin').value;
-            if (targetPin.length !== 5) return alert('5桁のPINコードを入力してください。');
-            
-            const targetId = 'easy-share-app-' + targetPin;
-            const myName = document.getElementById('my-name').value;
-            
-            updateStatus('相手の承認を待機中...', false);
-            
-            // 自分の名前(metadata)を添えて接続要求を出す
-            const conn = peer.connect(targetId, { metadata: { name: myName } });
-            
-            // 相手からの返答（許可/拒否）を待つ
-            conn.on('data', (data) => {
-                if (data.type === 'system') {
-                    if (data.message === 'accepted') {
-                        alert(`「${data.name}」さんが接続を許可しました！`);
-                        currentConn = conn;
-                        setupDataListener(conn);
-                        updateStatus(`${data.name} と接続中`, true);
-                    } else if (data.message === 'rejected') {
-                        alert('接続が拒否されました。');
-                        updateStatus('未接続', false);
-                        conn.close();
-                    }
+        function saveNameAndInit() {
+            const nameInput = document.getElementById('setup-name').value.trim();
+            if (!nameInput) return alert('名前を入力してください！');
+            localStorage.setItem('bokenasu_name', nameInput);
+            myName = nameInput;
+            document.getElementById('name-modal').classList.add('hidden');
+            initPeer();
+        }
+
+        function initPeer() {
+            document.getElementById('my-pin').innerText = myPin;
+            peer = new Peer(myPeerId);
+
+            // 誰かから接続要求（PINまたはルーム内から）が来た時
+            peer.on('connection', (conn) => {
+                const callerName = conn.metadata ? conn.metadata.name : '名無し';
+                
+                // 既に別のファイル共有接続がある場合は拒否
+                if (currentConn && currentConn.open && currentConn.peer !== conn.peer) {
+                    conn.on('open', () => { conn.send({ type: 'sys', msg: 'busy' }); setTimeout(()=>conn.close(), 500); });
+                    return;
+                }
+
+                // 接続確認ダイアログ
+                const accept = confirm(`【接続要求】\n「${callerName}」さんからファイル共有の要求があります。\n許可しますか？`);
+                if (accept) {
+                    setupFileConnection(conn, callerName);
+                    conn.on('open', () => conn.send({ type: 'sys', msg: 'accepted', name: myName }));
+                } else {
+                    conn.on('open', () => { conn.send({ type: 'sys', msg: 'rejected' }); setTimeout(()=>conn.close(), 500); });
                 }
             });
         }
 
+        // --- タブ切り替え ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+        }
+
         // ==========================================
-        // ファイルの送受信処理
+        // ファイル共有（1対1）の通信・切断ロジック
         // ==========================================
-        function setupDataListener(conn) {
+        function connectByPin() {
+            const targetPin = document.getElementById('target-pin').value;
+            if (targetPin.length !== 5) return alert('5桁のPINを入力してください。');
+            startConnection('bokenasu-usr-' + targetPin);
+        }
+
+        function startConnection(targetPeerId) {
+            if (currentConn && currentConn.open) return alert('既に接続中です。');
+            updateStatus('相手の承認を待機中...', 'waiting');
+            showPanel(true);
+
+            const conn = peer.connect(targetPeerId, { metadata: { name: myName } });
+            
             conn.on('data', (data) => {
-                // ファイルを受け取ったときの処理
-                if (data.type === 'file') {
-                    // 自動でダウンロードさせる
-                    const blob = new Blob([data.file], { type: data.filetype });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = data.filename;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    alert(`「${data.filename}」を受信しました！`);
+                if (data.type === 'sys') {
+                    if (data.msg === 'accepted') {
+                        setupFileConnection(conn, data.name);
+                        alert(`「${data.name}」さんと接続しました！`);
+                    } else if (data.msg === 'rejected') {
+                        alert('接続が拒否されました。');
+                        disconnect();
+                    } else if (data.msg === 'busy') {
+                        alert('相手は別のユーザーと通信中です。');
+                        disconnect();
+                    }
                 }
             });
+            conn.on('close', () => { if(!currentConn) disconnect(); }); // 承認前に切れた場合
+        }
+
+        function setupFileConnection(conn, peerName) {
+            currentConn = conn;
+            clearTimeout(reconnectTimer);
+            reconnectTimer = null;
             
-            // 接続が切れたときの処理
+            updateStatus(`🟢 ${peerName} と接続中`, 'connected');
+            document.getElementById('file-transfer-area').classList.remove('hidden');
+            document.getElementById('tabs-menu').classList.add('hidden'); // タブを隠して集中
+            document.getElementById('tab-pin').classList.remove('active');
+            document.getElementById('tab-room').classList.remove('active');
+
+            conn.on('data', (data) => {
+                if (data.type === 'file') {
+                    downloadFile(data.file, data.filename, data.filetype);
+                }
+            });
+
+            // ★ 相手が切断した時の「10秒待機」処理 ★
             conn.on('close', () => {
-                alert('通信が切断されました。');
-                updateStatus('未接続', false);
-                currentConn = null;
+                if (reconnectTimer) return; // 既に待機中なら何もしない
+                
+                updateStatus(`⚠️ 相手の接続を待っています...`, 'waiting');
+                document.getElementById('file-transfer-area').classList.add('hidden');
+                
+                // 10秒待って回復しなければ完全切断
+                reconnectTimer = setTimeout(() => {
+                    updateStatus(`❌ 切断されました`, 'disconnected');
+                    currentConn = null;
+                    reconnectTimer = null;
+                    setTimeout(() => disconnect(), 2000); // 2秒後にUIを初期状態に戻す
+                }, 10000);
             });
         }
 
         function sendFile() {
-            if (!currentConn || !currentConn.open) {
-                return alert('接続されていません。');
-            }
             const fileInput = document.getElementById('file-input');
             const file = fileInput.files[0];
             if (!file) return alert('ファイルを選択してください');
-            
-            // ファイルデータを相手に送信
-            currentConn.send({
-                type: 'file',
-                file: file,
-                filename: file.name,
-                filetype: file.type
-            });
-            alert('送信完了しました！');
+            if (!currentConn || !currentConn.open) return alert('接続されていません。');
+
+            currentConn.send({ type: 'file', file: file, filename: file.name, filetype: file.type });
+            alert('送信しました！');
             fileInput.value = '';
         }
 
-        // 画面の表示を切り替える便利関数
-        function updateStatus(text, isConnected) {
-            const statusEl = document.getElementById('status');
-            statusEl.innerText = text;
-            if (isConnected) {
-                statusEl.classList.add('connected');
-                document.getElementById('file-input').disabled = false;
-                document.getElementById('send-btn').disabled = false;
-            } else {
-                statusEl.classList.remove('connected');
-                document.getElementById('file-input').disabled = true;
-                document.getElementById('send-btn').disabled = true;
+        function downloadFile(fileData, filename, filetype) {
+            const blob = new Blob([fileData], { type: filetype });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename; a.click();
+            URL.revokeObjectURL(url);
+            alert(`「${filename}」を受信しました！`);
+        }
+
+        function disconnect() {
+            if (currentConn) {
+                currentConn.close();
+                currentConn = null;
             }
+            clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+            
+            updateStatus('未接続', '');
+            showPanel(false);
+            document.getElementById('file-transfer-area').classList.add('hidden');
+            document.getElementById('tabs-menu').classList.remove('hidden');
+            
+            // 現在のタブを表示し直す
+            const activeTabId = document.querySelector('.tab.active').getAttribute('onclick').match(/'([^']+)'/)[1];
+            document.getElementById(`tab-${activeTabId}`).classList.add('active');
+        }
+
+        // ==========================================
+        // ルーム機能（合言葉で集まる仕組み）
+        // ==========================================
+        function createRoom() {
+            const pass = document.getElementById('room-password').value.trim();
+            if (!pass) return alert('合言葉を入力してください');
+            
+            const roomId = 'bokenasu-rm-' + pass;
+            roomHostPeer = new Peer(roomId); // 自分がサーバー役になる
+            
+            roomHostPeer.on('open', () => {
+                document.getElementById('room-title').innerText = `ルーム: ${pass} (あなたがホスト)`;
+                document.getElementById('room-setup').classList.add('hidden');
+                document.getElementById('room-active').classList.remove('hidden');
+                
+                // ホスト自身もリストに登録
+                roomMembers = [{ id: myPeerId, name: myName + " (ホスト)" }];
+                updateRoomUI();
+            });
+
+            roomHostPeer.on('error', (err) => {
+                if (err.type === 'unavailable-id') alert('その合言葉のルームは既に存在します。「参加」してください。');
+                else alert('ルーム作成エラー: ' + err.message);
+            });
+
+            // 誰かがルームに参加してきた時の処理（ホストとしての仕事）
+            roomHostPeer.on('connection', (conn) => {
+                conn.on('data', (data) => {
+                    if (data.type === 'join') {
+                        // メンバー追加
+                        roomMembers.push({ id: data.userId, name: data.name, conn: conn });
+                        broadcastRoomMembers(); // 全員に最新リストを送信
+                    }
+                });
+                conn.on('close', () => {
+                    // 退出した人をリストから削除して全員に通知
+                    roomMembers = roomMembers.filter(m => m.conn !== conn);
+                    broadcastRoomMembers();
+                });
+            });
+        }
+
+        function joinRoom() {
+            const pass = document.getElementById('room-password').value.trim();
+            if (!pass) return alert('合言葉を入力してください');
+            
+            const roomId = 'bokenasu-rm-' + pass;
+            roomConnection = peer.connect(roomId); // ホストに接続
+            
+            roomConnection.on('open', () => {
+                // ホストに自分の情報を送る
+                roomConnection.send({ type: 'join', userId: myPeerId, name: myName });
+                document.getElementById('room-title').innerText = `ルーム: ${pass}`;
+                document.getElementById('room-setup').classList.add('hidden');
+                document.getElementById('room-active').classList.remove('hidden');
+            });
+
+            // ホストから最新のメンバーリストを受け取る
+            roomConnection.on('data', (data) => {
+                if (data.type === 'member_list') {
+                    roomMembers = data.members;
+                    updateRoomUI();
+                }
+            });
+
+            roomConnection.on('close', () => {
+                alert('ルームが解散されました（ホストが退出しました）。');
+                leaveRoom();
+            });
+            roomConnection.on('error', () => alert('ルームが見つかりません。'));
+        }
+
+        // ホスト専用：全員にメンバーリストを配る
+        function broadcastRoomMembers() {
+            updateRoomUI();
+            const safeList = roomMembers.map(m => ({ id: m.id, name: m.name })); // connオブジェクトは送れないので除外
+            roomMembers.forEach(member => {
+                if (member.conn && member.conn.open) {
+                    member.conn.send({ type: 'member_list', members: safeList });
+                }
+            });
+        }
+
+        // 画面にルームメンバーを表示する
+        function updateRoomUI() {
+            const listEl = document.getElementById('room-members');
+            listEl.innerHTML = '';
+            roomMembers.forEach(m => {
+                // 自分自身はリストに表示するが「接続」ボタンは出さない
+                if (m.id === myPeerId) return; 
+                
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span>${m.name}</span>
+                    <button class="connect-btn" onclick="startConnection('${m.id}')">接続</button>
+                `;
+                listEl.appendChild(li);
+            });
+            if (listEl.innerHTML === '') {
+                listEl.innerHTML = '<li style="color:#999; justify-content:center;">他のメンバーを待っています...</li>';
+            }
+        }
+
+        function leaveRoom() {
+            if (roomHostPeer) { roomHostPeer.destroy(); roomHostPeer = null; } // ホストなら部屋を破壊
+            if (roomConnection) { roomConnection.close(); roomConnection = null; } // ゲストなら退出
+            roomMembers = [];
+            
+            document.getElementById('room-setup').classList.remove('hidden');
+            document.getElementById('room-active').classList.add('hidden');
+        }
+
+        // UIユーティリティ
+        function updateStatus(text, className) {
+            const sb = document.getElementById('status-bar');
+            sb.innerText = text;
+            sb.className = 'status-bar ' + className;
+        }
+        function showPanel(show) {
+            const panel = document.getElementById('connection-panel');
+            if (show) panel.classList.remove('hidden');
+            else panel.classList.add('hidden');
         }
     </script>
 </body>
