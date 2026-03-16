@@ -12,20 +12,13 @@
             --text-main: #1F2937; --text-muted: #6B7280;
             --danger: #EF4444; --success: #10B981; --warning: #F59E0B;
         }
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif; background-color: var(--bg-color);
-            color: var(--text-main); margin: 0; padding: 20px;
-            display: flex; flex-direction: column; align-items: center;
-        }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .header { text-align: center; margin-bottom: 20px; }
         .header h1 { margin: 0; color: var(--primary); font-size: 2.5rem; letter-spacing: -1px; }
         .header p { margin: 5px 0 0; color: var(--text-muted); }
         .name-display { margin-top: 10px; display: inline-flex; align-items: center; gap: 10px; background: #E5E7EB; padding: 5px 15px; border-radius: 20px; }
         
-        .container {
-            width: 100%; max-width: 600px; background: var(--card-bg);
-            border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden;
-        }
+        .container { width: 100%; max-width: 600px; background: var(--card-bg); border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
         
         .tabs { display: flex; background: #E5E7EB; }
         .tab { flex: 1; padding: 15px; text-align: center; font-weight: bold; cursor: pointer; color: var(--text-muted); transition: 0.3s; }
@@ -35,18 +28,15 @@
         
         h3 { margin-top: 0; font-size: 1.2rem; border-bottom: 2px solid #F3F4F6; padding-bottom: 10px; }
         
-        input[type="text"], input[type="password"], input[type="number"] {
-            width: 100%; padding: 12px; margin: 8px 0 16px; border: 1px solid #D1D5DB; border-radius: 8px; box-sizing: border-box; font-size: 1rem;
-        }
-        button {
-            width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s;
-        }
+        input[type="text"], input[type="password"], input[type="number"] { width: 100%; padding: 12px; margin: 8px 0 16px; border: 1px solid #D1D5DB; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background: var(--primary-hover); }
         button:disabled { background: #9CA3AF; cursor: not-allowed; }
         button.danger { background: var(--danger); margin-top: 10px; }
         button.danger:hover { background: #DC2626; }
         button.success { background: var(--success); }
         button.small { width: auto; padding: 6px 12px; font-size: 0.85rem; background: var(--text-muted); }
+        button.small-danger { width: auto; padding: 6px 12px; font-size: 0.85rem; background: var(--danger); }
         
         .pin-box { text-align: center; font-size: 3rem; font-weight: bold; color: var(--primary); letter-spacing: 8px; margin: 10px 0; }
         .status-bar { padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold; background: #F3F4F6; }
@@ -57,7 +47,6 @@
         .list-group { list-style: none; padding: 0; margin: 0 0 20px 0; }
         .list-group li { padding: 12px; border: 1px solid #E5E7EB; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; background: #F9FAFB; }
         
-        /* チャットエリア */
         .chat-box { height: 200px; overflow-y: auto; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #F9FAFB; display: flex; flex-direction: column; gap: 8px; }
         .chat-msg { background: white; padding: 8px 12px; border-radius: 12px; border: 1px solid #E5E7EB; max-width: 80%; align-self: flex-start; word-break: break-all; }
         .chat-msg.self { background: #E0E7FF; border-color: #C7D2FE; align-self: flex-end; }
@@ -66,7 +55,8 @@
         .chat-input-area input { margin: 0; flex: 1; }
         .chat-input-area button { width: auto; padding: 0 20px; }
 
-        /* フレンドマーク */
+        .file-status-box { padding: 15px; background: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 8px; margin-top: 10px; font-size: 0.95rem; text-align: center; }
+
         .online-dot { width: 12px; height: 12px; border-radius: 50%; background-color: #D1D5DB; display: inline-block; margin-right: 8px; }
         .online-dot.active { background-color: var(--success); }
 
@@ -116,7 +106,8 @@
                 <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                     <h3 style="font-size: 1rem; border:none; padding:0; margin-bottom:10px;">ファイル送信 (双方向)</h3>
                     <input type="file" id="file-input" style="margin-bottom: 10px; width:100%;">
-                    <button onclick="sendFile()">送信する</button>
+                    <button onclick="sendFileReq()">送信する</button>
+                    <div id="file-transfer-status" class="hidden file-status-box"></div>
                 </div>
 
                 <div class="chat-box" id="p2p-chat-box"></div>
@@ -125,7 +116,7 @@
                     <button onclick="sendP2PChat()">送信</button>
                 </div>
 
-                <button onclick="disconnect()" class="danger" style="margin-top: 20px;">切断する</button>
+                <button onclick="disconnect(true)" class="danger" style="margin-top: 20px;">切断する</button>
             </div>
         </div>
 
@@ -171,9 +162,7 @@
 
         <div id="tab-friends" class="content">
             <h3>フレンド一覧</h3>
-            <p style="font-size:0.9rem; color:var(--text-muted);">※このタブを開くとオンライン状態を確認します。</p>
-            <ul class="list-group" id="friends-list">
-                </ul>
+            <ul class="list-group" id="friends-list"></ul>
         </div>
     </div>
 
@@ -185,17 +174,30 @@
         let currentConn = null;   
         let reconnectTimer = null;
         let incomingConn = null;  
+        let isManualDisconnect = false;
         
         let roomHostPeer = null;  
         let roomMembers = [];     
         let roomConnection = null;
 
+        // データ保存用
         let friends = JSON.parse(localStorage.getItem('bokenasu_friends') || '[]');
+        let bannedUsers = JSON.parse(localStorage.getItem('bokenasu_banned') || '[]'); // BANリスト
+
+        // ファイル転送用変数
+        let sendingFileObj = null;
+        let receiveBuffer = [];
+        let receiveMeta = null;
+        const CHUNK_SIZE = 64 * 1024; // 64KBごとの分割転送で最適化
 
         window.onload = () => {
             myName = localStorage.getItem('bokenasu_name');
             if (!myName) openNameModal();
             else { document.getElementById('display-my-name').innerText = myName; initPeer(); }
+            
+            renderFriends();
+            // 常にオンライン状態を自動更新（15秒間隔）
+            setInterval(checkFriendsStatus, 15000); 
         };
 
         function openNameModal() {
@@ -218,7 +220,6 @@
             peer = new Peer(myPeerId);
 
             peer.on('connection', (conn) => {
-                // Ping（オンライン確認）通信の場合はすぐ閉じる
                 if (conn.metadata && conn.metadata.type === 'ping') {
                     conn.on('open', () => conn.close());
                     return;
@@ -236,13 +237,18 @@
                 document.getElementById('confirm-title').innerText = `${callerName} さん`;
                 document.getElementById('confirm-modal').classList.remove('hidden');
             });
+            
+            // 初回のオンラインチェック
+            setTimeout(checkFriendsStatus, 1000);
         }
 
         function acceptConnection() {
             document.getElementById('confirm-modal').classList.add('hidden');
             if (!incomingConn) return;
             const callerName = incomingConn.metadata ? incomingConn.metadata.name : '名無し';
-            setupFileConnection(incomingConn, callerName);
+            
+            setupFileConnection(incomingConn, callerName); // ★受信側もUIを切り替える
+            
             const sendAccept = () => incomingConn.send({ type: 'sys', msg: 'accepted', name: myName });
             if (incomingConn.open) sendAccept(); else incomingConn.on('open', sendAccept);
         }
@@ -255,7 +261,6 @@
             incomingConn = null;
         }
 
-        // --- 通信処理 ---
         function connectByPin() {
             const targetPin = document.getElementById('target-pin').value;
             if (targetPin.length !== 5) return alert('5桁のPINを入力してください。');
@@ -275,31 +280,40 @@
                         setupFileConnection(conn, data.name);
                         alert(`「${data.name}」さんと接続しました。`);
                     } else if (data.msg === 'rejected') {
-                        alert('接続が拒否されました。'); disconnect();
+                        alert('接続が拒否されました。'); disconnect(false);
                     } else if (data.msg === 'busy') {
-                        alert('相手は別のユーザーと通信中です。'); disconnect();
+                        alert('相手は別のユーザーと通信中です。'); disconnect(false);
                     }
                 }
             });
-            conn.on('close', () => { if(!currentConn) disconnect(); });
+            conn.on('close', () => { if(!currentConn) disconnect(false); });
         }
 
         function setupFileConnection(conn, peerName) {
             currentConn = conn;
+            isManualDisconnect = false;
             clearTimeout(reconnectTimer); reconnectTimer = null;
-            document.getElementById('p2p-chat-box').innerHTML = ''; // チャット履歴リセット
+            document.getElementById('p2p-chat-box').innerHTML = ''; 
+            resetFileTransferUI();
             
             updateStatus(`${peerName} と接続中`, 'connected');
+            showPanel(true); // 受信側のために確実に表示
             document.getElementById('action-area').classList.remove('hidden');
             document.getElementById('tabs-menu').classList.add('hidden');
             document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
 
-            // フレンドボタンの表示制御
             const isFriend = friends.some(f => f.id === conn.peer);
             document.getElementById('add-friend-btn').style.display = isFriend ? 'none' : 'block';
 
             conn.on('data', (data) => {
-                if (data.type === 'file') downloadFile(data.file, data.filename, data.filetype);
+                // ファイル転送関連
+                if (data.type === 'file_req') handleFileRequest(data.filename, data.size, data.filetype);
+                if (data.type === 'file_acc') startFileChunking();
+                if (data.type === 'file_rej') setFileUIStatus('相手が受信を拒否しました。');
+                if (data.type === 'file_chunk') handleFileChunk(data.index, data.total, data.data);
+                if (data.type === 'file_done') setFileUIStatus('転送が完了しました！(相手がダウンロードしました)', true);
+                
+                // チャット・システム関連
                 if (data.type === 'chat') appendChatMsg('p2p-chat-box', peerName, data.text, false);
                 if (data.type === 'sys' && data.msg === 'friend_req') handleFriendRequest(data.id, data.name);
                 if (data.type === 'sys' && data.msg === 'friend_acc') {
@@ -307,50 +321,150 @@
                     addFriendLocal(data.id, data.name);
                     document.getElementById('add-friend-btn').style.display = 'none';
                 }
+                if (data.type === 'sys' && data.msg === 'manual_disconnect') {
+                    alert('相手が切断しました。');
+                    isManualDisconnect = true;
+                    disconnect(false); // ★ 即座に切断＆ホームへ
+                }
             });
 
             conn.on('close', () => {
+                if (isManualDisconnect) return; // 手動切断時は待機しない
                 if (reconnectTimer) return; 
-                updateStatus(`相手の接続を待機しています...`, 'waiting');
+                
+                updateStatus(`通信が不安定です。待機中...`, 'waiting');
                 document.getElementById('action-area').classList.add('hidden');
                 reconnectTimer = setTimeout(() => {
-                    updateStatus(`切断されました`, 'disconnected');
+                    alert('切断されました。');
                     currentConn = null; reconnectTimer = null;
-                    setTimeout(() => disconnect(), 2000);
+                    disconnect(false);
                 }, 10000);
             });
         }
 
-        function sendFile() {
+        // =========================================
+        // 最適化されたファイル転送 (チャンク方式)
+        // =========================================
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024; const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function resetFileTransferUI() {
+            const el = document.getElementById('file-transfer-status');
+            el.innerHTML = ''; el.classList.add('hidden');
+            sendingFileObj = null; receiveBuffer = []; receiveMeta = null;
+        }
+
+        function setFileUIStatus(html, isSuccess = false) {
+            const el = document.getElementById('file-transfer-status');
+            el.innerHTML = html;
+            el.style.background = isSuccess ? '#D1FAE5' : '#EEF2FF';
+            el.style.borderColor = isSuccess ? '#A7F3D0' : '#C7D2FE';
+            el.classList.remove('hidden');
+        }
+
+        function sendFileReq() {
             const fileInput = document.getElementById('file-input');
             const file = fileInput.files[0];
             if (!file) return alert('ファイルを選択してください');
             if (!currentConn || !currentConn.open) return alert('接続されていません。');
-            currentConn.send({ type: 'file', file: file, filename: file.name, filetype: file.type });
-            alert('送信しました。');
-            fileInput.value = '';
+            
+            sendingFileObj = file;
+            currentConn.send({ type: 'file_req', filename: file.name, size: file.size, filetype: file.type });
+            setFileUIStatus('相手の承認を待っています...');
         }
 
-        function downloadFile(fileData, filename, filetype) {
-            const blob = new Blob([fileData], { type: filetype });
+        function handleFileRequest(filename, size, filetype) {
+            receiveMeta = { filename, size, filetype };
+            setFileUIStatus(`
+                <p style="margin:0 0 10px 0;"><strong>${filename}</strong><br>サイズ: ${formatBytes(size)}</p>
+                <p style="margin:0 0 10px 0;">このファイルを受信しますか？</p>
+                <button onclick="acceptFileTransfer()" class="success small">はい</button>
+                <button onclick="rejectFileTransfer()" class="danger small">いいえ</button>
+            `);
+        }
+
+        function acceptFileTransfer() {
+            receiveBuffer = [];
+            currentConn.send({ type: 'file_acc' });
+            setFileUIStatus('受信準備中...');
+        }
+        function rejectFileTransfer() {
+            currentConn.send({ type: 'file_rej' });
+            resetFileTransferUI();
+        }
+
+        async function startFileChunking() {
+            setFileUIStatus('送信開始...');
+            let offset = 0;
+            const totalChunks = Math.ceil(sendingFileObj.size / CHUNK_SIZE);
+            let currentChunk = 0;
+            const fileReader = new FileReader();
+
+            while (offset < sendingFileObj.size) {
+                if (!currentConn || !currentConn.open) break;
+
+                const slice = sendingFileObj.slice(offset, offset + CHUNK_SIZE);
+                const data = await new Promise(resolve => {
+                    fileReader.onload = e => resolve(e.target.result);
+                    fileReader.readAsArrayBuffer(slice);
+                });
+
+                currentConn.send({ type: 'file_chunk', index: currentChunk, total: totalChunks, data: data });
+                offset += CHUNK_SIZE; currentChunk++;
+                
+                // UI更新とスレッドの解放
+                if (currentChunk % 5 === 0 || currentChunk === totalChunks) {
+                    const percent = Math.floor((currentChunk / totalChunks) * 100);
+                    setFileUIStatus(`送信中... ${percent}%`);
+                    await new Promise(r => setTimeout(r, 2)); // ブラウザクラッシュ防止
+                }
+            }
+        }
+
+        function handleFileChunk(index, total, data) {
+            receiveBuffer.push(data);
+            if (index % 5 === 0 || index + 1 === total) {
+                const percent = Math.floor(((index + 1) / total) * 100);
+                setFileUIStatus(`受信中... ${percent}%`);
+            }
+            if (index + 1 === total) {
+                currentConn.send({ type: 'file_done' });
+                showFileDownloadUI();
+            }
+        }
+
+        function showFileDownloadUI() {
+            const blob = new Blob(receiveBuffer, { type: receiveMeta.filetype });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = filename; a.click();
-            URL.revokeObjectURL(url);
-            alert(`「${filename}」を受信しました。`);
+            setFileUIStatus(`
+                <p style="margin:0 0 10px 0;"><strong>${receiveMeta.filename}</strong> の受信完了</p>
+                <a href="${url}" download="${receiveMeta.filename}" style="display:inline-block; padding:8px 15px; background:var(--primary); color:white; text-decoration:none; border-radius:8px;">ダウンロードを実行</a>
+            `, true);
+            receiveBuffer = []; // メモリ解放
         }
 
-        function disconnect() {
+        // =========================================
+        // 汎用機能
+        // =========================================
+        function disconnect(isManual = false) {
+            isManualDisconnect = true;
+            if (isManual && currentConn && currentConn.open) {
+                currentConn.send({ type: 'sys', msg: 'manual_disconnect' });
+            }
             if (currentConn) { currentConn.close(); currentConn = null; }
             clearTimeout(reconnectTimer); reconnectTimer = null;
+            
             updateStatus('未接続', '');
             showPanel(false);
             document.getElementById('action-area').classList.add('hidden');
             document.getElementById('tabs-menu').classList.remove('hidden');
-            document.querySelector('.tab.active').click(); // 現在のタブを再表示
+            document.querySelector('.tab.active').click(); 
         }
 
-        // --- チャットユーティリティ ---
         function parseLinks(text) {
             const escaped = text.replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag]));
             return escaped.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:var(--primary);">$1</a>');
@@ -395,7 +509,7 @@
             if (!friends.some(f => f.id === id)) {
                 friends.push({ id, name });
                 localStorage.setItem('bokenasu_friends', JSON.stringify(friends));
-                renderFriends();
+                renderFriends(); checkFriendsStatus();
             }
         }
 
@@ -415,30 +529,24 @@
         }
 
         function checkFriendsStatus() {
+            if (!peer || peer.disconnected) return;
             friends.forEach(f => {
                 const dot = document.getElementById(`dot-${f.id}`);
-                if (dot) dot.classList.remove('active'); // 一旦オフ
-                
-                // Ping通信でオンライン確認
                 const testConn = peer.connect(f.id, { metadata: { type: 'ping' } });
-                testConn.on('open', () => {
-                    if (dot) dot.classList.add('active'); // 通信成功でオンライン
-                    testConn.close();
-                });
+                testConn.on('open', () => { if (dot) dot.classList.add('active'); testConn.close(); });
+                testConn.on('error', () => { if (dot) dot.classList.remove('active'); });
+                testConn.on('close', () => { /* timeout fallback handled naturally */ });
+                // 3秒経っても繋がらなければオフライン扱い
+                setTimeout(() => { if (dot && testConn && !testConn.open) dot.classList.remove('active'); }, 3000);
             });
         }
 
-        // --- タブ＆ルーム機能 ---
+        // --- ルーム & BAN機能 ---
         function switchTab(tabId) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
             document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
             document.getElementById(`tab-${tabId}`).classList.add('active');
-            
-            if (tabId === 'friends') {
-                renderFriends();
-                checkFriendsStatus(); // 開いた時にオンラインチェック
-            }
         }
 
         function createRoom() {
@@ -460,12 +568,19 @@
             roomHostPeer.on('connection', (conn) => {
                 conn.on('data', (data) => {
                     if (data.type === 'join') {
+                        // ★ BANチェック
+                        if (bannedUsers.includes(data.userId)) {
+                            conn.send({ type: 'sys', msg: 'banned' });
+                            setTimeout(() => conn.close(), 500);
+                            return;
+                        }
                         roomMembers.push({ id: data.userId, name: data.name, conn: conn });
                         broadcastRoomData({ type: 'member_list', members: roomMembers.map(m=>({id:m.id, name:m.name})) });
                     }
                     if (data.type === 'room_chat') {
-                        appendChatMsg('room-chat-box', data.name, data.text, false);
-                        broadcastRoomData(data); // 他メンバーへ転送
+                        // 自分（ホスト）宛ての重複表示を防ぐ
+                        if (data.senderId !== myPeerId) appendChatMsg('room-chat-box', data.name, data.text, false);
+                        broadcastRoomData(data); 
                     }
                 });
                 conn.on('close', () => {
@@ -488,16 +603,33 @@
                 document.getElementById('room-chat-box').innerHTML = '';
             });
             roomConnection.on('data', (data) => {
+                if (data.type === 'sys' && data.msg === 'banned') {
+                    alert('あなたはこのホストのルームからBANされています。');
+                    leaveRoom();
+                }
                 if (data.type === 'member_list') { roomMembers = data.members; updateRoomUI(); }
-                if (data.type === 'room_chat') appendChatMsg('room-chat-box', data.name, data.text, false);
+                if (data.type === 'room_chat') {
+                    // ★ 自分が送ったチャットの二重表示バグを修正
+                    if (data.senderId !== myPeerId) appendChatMsg('room-chat-box', data.name, data.text, false);
+                }
             });
-            roomConnection.on('close', () => { alert('ルームが解散されました。'); leaveRoom(); });
+            roomConnection.on('close', () => { 
+                if(document.getElementById('room-active').classList.contains('hidden') === false) {
+                    alert('ルームが解散されたか、通信が切断されました。'); leaveRoom(); 
+                }
+            });
             roomConnection.on('error', () => alert('ルームが見つかりません。'));
         }
 
         function broadcastRoomData(data) {
             updateRoomUI();
-            roomMembers.forEach(m => { if (m.conn && m.conn.open) m.conn.send(data); });
+            roomMembers.forEach(m => { 
+                if (m.conn && m.conn.open) {
+                    // チャットの場合、送信元には送り返さない（二重表示防止）
+                    if (data.type === 'room_chat' && m.id === data.senderId) return;
+                    m.conn.send(data); 
+                }
+            });
         }
 
         function updateRoomUI() {
@@ -506,21 +638,49 @@
             roomMembers.forEach(m => {
                 if (m.id === myPeerId) return; 
                 const li = document.createElement('li');
-                li.innerHTML = `<span>${m.name}</span> <button class="small" onclick="startConnection('${m.id}')">接続</button>`;
+                
+                // ホストのみBANボタンを表示
+                const banBtn = roomHostPeer ? `<button class="small-danger" onclick="banMember('${m.id}')">BAN</button>` : '';
+                
+                li.innerHTML = `
+                    <span>${m.name}</span> 
+                    <div style="display:flex; gap:5px;">
+                        <button class="small" onclick="startConnection('${m.id}')">接続</button>
+                        ${banBtn}
+                    </div>
+                `;
                 listEl.appendChild(li);
             });
             if (listEl.innerHTML === '') listEl.innerHTML = '<li style="color:#999; justify-content:center;">他のメンバーを待機中...</li>';
+        }
+
+        // ★ メンバーBAN機能
+        function banMember(memberId) {
+            if (!confirm('このメンバーを追放し、二度と参加できないようにしますか？')) return;
+            
+            bannedUsers.push(memberId);
+            localStorage.setItem('bokenasu_banned', JSON.stringify(bannedUsers));
+            
+            const member = roomMembers.find(m => m.id === memberId);
+            if (member && member.conn) {
+                member.conn.send({ type: 'sys', msg: 'banned' });
+                setTimeout(() => member.conn.close(), 500);
+            }
+            roomMembers = roomMembers.filter(m => m.id !== memberId);
+            broadcastRoomData({ type: 'member_list', members: roomMembers.map(m=>({id:m.id, name:m.name})) });
         }
 
         function sendRoomChat() {
             const input = document.getElementById('room-chat-input');
             const text = input.value.trim();
             if (!text) return;
+            
+            // 自分の画面に表示
             appendChatMsg('room-chat-box', myName, text, true);
             
-            const msgData = { type: 'room_chat', name: myName, text: text };
-            if (roomHostPeer) broadcastRoomData(msgData); // 自分がホスト
-            else if (roomConnection && roomConnection.open) roomConnection.send(msgData); // ゲスト
+            const msgData = { type: 'room_chat', name: myName, text: text, senderId: myPeerId }; // senderId追加
+            if (roomHostPeer) broadcastRoomData(msgData); 
+            else if (roomConnection && roomConnection.open) roomConnection.send(msgData); 
             
             input.value = '';
         }
